@@ -1,57 +1,37 @@
 module BeatSaber
   using WAV
   using JSON
-  using PyPlot
+
   export createMap
 
-  function getRollingAverage(arr::Array{T}, sweepRadius::Int)::Array{T} where {T<:Number}
-    rolling = sum(arr[1:sweepRadius])
-    avgArr = []
+  function getPeaks(arr::Array{T}, sweepRadius::Int)::Array{T} where {T<:Number}
+    longRadius = sweepRadius * 5
+
+    shortRolling = sum(arr[1:sweepRadius])
+    longRolling = sum(arr[1:longRadius])
     arrLength = length(arr)
 
+    peaks = []
+    beenBelow = true
+
     for i=1:arrLength
-      toAdd = i + sweepRadius > arrLength ? 0 : arr[i + sweepRadius]
-      toSubtract = i - sweepRadius < 1 ? 0 : arr[i - sweepRadius]
-      rolling = rolling + toAdd - toSubtract
-      push!(avgArr, rolling)
+      shortAdd = i + sweepRadius > arrLength ? 0 : arr[i + sweepRadius]
+      shortSubtract = i - sweepRadius < 1 ? 0 : arr[i - sweepRadius]
+      longAdd = i + longRadius > arrLength ? 0 : arr[i + longRadius]
+      longSubtract = i - longRadius < 1 ? 0 : arr[i - longRadius]
+
+      shortRolling = shortRolling + shortAdd - shortSubtract
+      longRolling = longRolling + longAdd - longSubtract
+
+      if beenBelow && shortRolling > longRolling * (1.3 / 5)
+        beenBelow = false
+        push!(peaks, i)
+      elseif !beenBelow && shortRolling < longRolling / 5
+        beenBelow = true
+      end
     end
 
-    return avgArr
-  end
-
-  function getMaxes(arr::Array{T}, lookahead::Int)::Array{T} where {T<:Number}
-    direction = true
-    extremavalue = 0
-    extremaindex = 1
-    postcount = 0
-    maxtimes = []
-    minextrema = 0
-
-    i = 1
-    while i <= length(arr)
-      if xor(arr[i] < extremavalue, direction)
-        extremavalue = arr[i]
-        extremaindex = i
-        postcount = 0
-      else
-        postcount += 1
-      end
-
-      if postcount >= lookahead
-        if direction
-          push!(maxtimes, extremaindex)
-        else
-          i -= lookahead
-          minextrema = extremavalue
-        end
-        direction = !direction
-        postcount = 0
-      end
-
-      i += 1
-    end
-
-    return maxtimes
+    return peaks
   end
 
   function createNote(color::Int, direction::Int, ntime::Number, x::Int, y::Int)
@@ -84,9 +64,8 @@ module BeatSaber
     data = (rawdata[:,1] + rawdata[:,2]) .^ 2 # Merge two channels into one
     sweep = convert(Int, round(bps / 50))
 
-    rollavg = getRollingAverage(data, sweep)
-    maxindices = getMaxes(rollavg, sweep * 5)
-    maxtimes = maxindices / bps
+    peaks = getPeaks(data, sweep)
+    maxtimes = peaks / bps
     json = createMapJSON(maxtimes)
 
     write("Expert.dat", json)
