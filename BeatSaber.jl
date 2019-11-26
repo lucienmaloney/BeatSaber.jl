@@ -44,8 +44,36 @@ module BeatSaber
     )
   end
 
+  function createNote(pattern::String, ntime::Number)
+    args = map(c -> parse(Int, c), collect(pattern))
+    return createNote(args[4], args[3], ntime, args[1], args[2])
+  end
+
+  function mapNotes(noteTimes::Array{<:Number})::Array{Dict}
+    patterns = JSON.parsefile("patterns.json")["patterns"]
+    patternslength = length(patterns)
+    notes = []
+    i = 1
+
+    while i <= length(noteTimes)
+      pattern = patterns[rand(1:patternslength)]
+      patternlength = length(pattern)
+
+      for j=1:patternlength
+        subpattern = pattern[j]
+        foreach(n -> push!(notes, createNote(n, noteTimes[i])), subpattern)
+        i += 1
+        if i > length(noteTimes)
+          return notes
+        end
+      end
+    end
+
+    return notes
+  end
+
   function createMapJSON(noteTimes::Array{T})::String where {T<:Number}
-    notes = map(t -> createNote(rand(0:1), rand(0:8), t, rand(0:3), 0), noteTimes)
+    notes = mapNotes(noteTimes)
 
     songData = Dict(
       "_version" => "2.0.0",
