@@ -1,0 +1,28 @@
+{
+  "_version": "2.0.0",
+  "_songName": "<SongName>",
+  "_songSubName": "",
+  "_songAuthorName": "Song Author",
+  "_levelAuthorName": "Julia",
+  "_beatsPerMinute": 60,
+  "_songTimeOffset": 0,
+  "_shuffle": 0,
+  "_shufflePeriod": 0,
+  "_previewStartTime": 0,
+  "_previewDuration": 0,
+  "_songFilename": "song.egg",
+  "_difficultyBeatmapSets": [
+    {
+      "_beatmapCharacteristicName": "Standard",
+      "_difficultyBeatmaps": [
+        {
+          "_difficulty": "ExpertPlus",
+          "_difficultyRank": 9,
+          "_beatmapFilename": "ExpertPlus.dat",
+          "_noteJumpMovementSpeed": 0,
+          "_noteJumpStartBeatOffset": 0
+        }
+      ]
+    }
+  ]
+}

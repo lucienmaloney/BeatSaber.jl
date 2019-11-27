@@ -2,7 +2,7 @@ module BeatSaber
   using WAV
   using JSON
 
-  export createMap
+  export mapSong
 
   function getPeaks(arr::Array{T}, sweepRadius::Int)::Array{T} where {T<:Number}
     longRadius = sweepRadius * 5
@@ -44,7 +44,19 @@ module BeatSaber
     )
   end
 
-  function createNote(pattern::String, ntime::Number)
+  function createReversedNote(pattern::String, ntime::Number)::Dict
+    args = map(c -> parse(Int, c), collect(pattern))
+    color = args[4] == 1 ? 0 : 1
+    dir = args[3]
+    if dir == 2 || dir == 4 || dir == 6
+      dir += 1
+    elseif dir == 3 || dir == 5 || dir == 7
+      dir -= 1
+    end
+    return createNote(color, dir, ntime, 3 - args[1], args[2])
+  end
+
+  function createNote(pattern::String, ntime::Number)::Dict
     args = map(c -> parse(Int, c), collect(pattern))
     return createNote(args[4], args[3], ntime, args[1], args[2])
   end
@@ -57,11 +69,12 @@ module BeatSaber
 
     while i <= length(noteTimes)
       pattern = patterns[rand(1:patternslength)]
+      reversed = rand(Bool)
       patternlength = length(pattern)
 
       for j=1:patternlength
         subpattern = pattern[j]
-        foreach(n -> push!(notes, createNote(n, noteTimes[i])), subpattern)
+        foreach(n -> push!(notes, reversed ? createReversedNote(n, noteTimes[i]) : createNote(n, noteTimes[i])), subpattern)
         i += 1
         if i > length(noteTimes)
           return notes
@@ -87,7 +100,7 @@ module BeatSaber
     return json(songData)
   end
 
-  function createMap(filename::String)
+  function createMap(filename::String)::String
     rawdata, bps = wavread(filename)
     data = (rawdata[:,1] + rawdata[:,2]) .^ 2 # Merge two channels into one
     sweep = convert(Int, round(bps / 50))
@@ -96,7 +109,29 @@ module BeatSaber
     maxtimes = peaks / bps
     json = createMapJSON(maxtimes)
 
-    write("Expert.dat", json)
+    return json
+  end
+
+  function mapSong(filename::String, songname::String)
+    if !isdir(songname)
+      mkdir(songname)
+    end
+
+    wavfile = "$songname/$songname.wav"
+    if match(r".wav$"i, filename) == nothing
+      run(`ffmpeg -i $filename $wavfile`)
+    else
+      cp(songname, wavfile)
+    end
+
+    write("$songname/ExpertPlus.dat", createMap(wavfile))
+
+    run(`ffmpeg -i $wavfile $songname/$songname.ogg`)
+    rm(wavfile)
+    mv("$songname/$songname.ogg", "$songname/song.egg")
+
+    infostring = String(read("info.dat"))
+    write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
   end
 
 end
