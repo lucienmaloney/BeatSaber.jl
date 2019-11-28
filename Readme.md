@@ -20,3 +20,11 @@
 1: (0,1) | (1,1) | (2,1) | (3,1)
 0: (0,0) | (1,0) | (2,0) | (3,0)
      0       1       2       3
+
+#### Notes Mapping
+0: Instant
+1: Blitz
+2: Rapid
+3: Medium
+4: Slow
+5: None
