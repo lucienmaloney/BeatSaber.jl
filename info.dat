@@ -11,6 +11,8 @@
   "_previewStartTime": 0,
   "_previewDuration": 0,
   "_songFilename": "song.egg",
+  "_coverImageFilename": "cover.jpg",
+  "_environmentName": "DefaultEnvironment",
   "_difficultyBeatmapSets": [
     {
       "_beatmapCharacteristicName": "Standard",
