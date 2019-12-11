@@ -1,34 +1,39 @@
 module BeatSaber
   using WAV
   using JSON
+  using DSP
   using DelimitedFiles
 
   export mapSong
 
-  function getPeaks(arr::Array{T}, sweepRadius::Int)::Array{T} where {T<:Number}
-    longRadius = sweepRadius * 5
+  function getPeaks(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
+    spec = spectrogram(data, 512 * 8)
 
-    shortRolling = sum(arr[1:sweepRadius])
-    longRolling = sum(arr[1:longRadius])
-    arrLength = length(arr)
+    flux = [0.0]
+
+    for i=2:size(spec.power)[2]
+      push!(flux, sum((spec.power[:,i] - spec.power[:,i-1]) .|> (x -> max(x, 0))))
+    end
+
+    rolling = []
+    window = 10
+    len = length(flux)
+    for i=1:len
+      wmin = max(1, i - window)
+      wmax = min(len, i + window)
+      push!(rolling, sum(flux[wmin:wmax]) / (wmax - wmin + 1))
+    end
+
+    seconds = length(data) / bps
+    times = LinRange(0, seconds, length(flux))
+    difference = (flux - rolling) .|> (x -> max(x, 0))
 
     peaks = []
-    beenBelow = true
 
-    for i=1:arrLength
-      shortAdd = i + sweepRadius > arrLength ? 0 : arr[i + sweepRadius]
-      shortSubtract = i - sweepRadius < 1 ? 0 : arr[i - sweepRadius]
-      longAdd = i + longRadius > arrLength ? 0 : arr[i + longRadius]
-      longSubtract = i - longRadius < 1 ? 0 : arr[i - longRadius]
-
-      shortRolling = shortRolling + shortAdd - shortSubtract
-      longRolling = longRolling + longAdd - longSubtract
-
-      if beenBelow && shortRolling > longRolling * (1.3 / 5)
-        beenBelow = false
-        push!(peaks, i)
-      elseif !beenBelow && shortRolling < longRolling / 5
-        beenBelow = true
+    for i=2:(length(difference) - 1)
+      val = difference[i]
+      if val > difference[i - 1] && val > difference[i + 1]
+        push!(peaks, times[i])
       end
     end
 
@@ -91,6 +96,8 @@ module BeatSaber
     patternkeys = collect(keys(patterns))
     previousnote = missing
     penultimatenote = missing
+    lastreddirection = -1
+    lastbluedirection = -1
     notes = []
 
     for notetime in noteTimes
@@ -104,7 +111,20 @@ module BeatSaber
         penultimatenote = rand(tempkeys)
       end
 
-      dict = patterns[previousnote][penultimatenote]
+      unfiltereddict = patterns[previousnote][penultimatenote]
+      dict = filter(function(p)
+        for i=1:4:length(p[1])
+          if (p[1][i + 3] == '0' && p[1][i + 2] == lastreddirection) || (p[1][i + 3] == '1' && p[1][i + 2] == lastbluedirection)
+            return false
+          end
+        end
+        return true
+      end, unfiltereddict)
+
+      if length(dict) == 0
+        dict = unfiltereddict
+      end
+
       total = values(dict) |> sum
       target = rand(1:total)
       counter = 0
@@ -115,9 +135,15 @@ module BeatSaber
           penultimatenote = previousnote
           previousnote = k
           for i = 1:4:length(k)
-            push!(notes, createNote(k[i:(i + 3)], notetime))
+            if k[i + 3] == '1'
+              lastbluedirection = k[i + 2]
+            else
+              lastreddirection = k[i + 2]
+            end
+            newnote = createNote(k[i:(i + 3)], notetime)
+            push!(notes, newnote)
           end
-          counter = -10000
+          counter = -1000000
         end
       end
     end
@@ -179,12 +205,12 @@ module BeatSaber
 
   function createMap(filename::String)::String
     rawdata, bps = wavread(filename)
-    data = (rawdata[:,1] + rawdata[:,2]) .^ 2 # Merge two channels into one
-    sweep = convert(Int, round(bps / 50))
+    data = reduce(+, rawdata, dims=2)[:,1] # Merge channels down to mono
+    #sweep = convert(Int, round(bps / 50))
 
-    peaks = getPeaks(data, sweep)
-    maxtimes = peaks / bps
-    json = createMapJSON(maxtimes)
+    peaks = getPeaks(data, bps)
+    #maxtimes = peaks / bps
+    json = createMapJSON(peaks)
 
     return json
   end
