@@ -50,29 +50,59 @@ module BeatSaber
     )
   end
 
-  function getnotedata(note::Int)::Tuple
+  function getnotedata(note::Int, color::Int = 0)::Tuple
     x = (note - 1) % 4
     y = div((note - 1), 4) % 3
     direction = div((note - 1), 12)
 
-    return (x, y, direction)
+    if color == 0
+      return (x, y, direction)
+    else
+      directions = [0 1 3 2 5 4 7 6 8]
+      return (3 - x, y, directions[direction + 1])
+    end
+  end
+
+  function desirability(x::Int, y::Int, direction::Int)::Number
+    desire = 1
+    if y == 0 && (x == 1 || x == 2)
+      desire *= 2
+    end
+    if y == 1 && (x == 1 || x == 2)
+      desire /= 3
+    end
+    if y == 2
+      desire *= 0.5
+    end
+    if direction >= 4
+      desire /= 2
+    end
+    return desire
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
     matrix = readdlm("notes.csv")
-    note = rand(1:96)
-    notes = []
+    notes = [rand(1:96), rand(1:96)]
+    notesequence = []
 
     for n in notetimes
       index = rand(1:96)
-      while matrix[note,index] != 1
-        index = index % 96 + 1
+      note = rand(1:2)
+      notefound = false
+      while !notefound
+        notetuple = getnotedata(index, note - 1)
+        desire = desirability(notetuple...)
+        if matrix[notes[note],index] == 1 && desire > rand()
+          notefound = true
+          notes[note] = index
+          push!(notesequence, createnote(notetuple..., note - 1, n))
+        else
+          index = (index + 12) % 96 + 1
+        end
       end
-      note = index
-      push!(notes, createnote(getnotedata(note)..., 0, n))
     end
 
-    return notes
+    return notesequence
   end
 
   function createbeatmapJSON(notetimes::Array{T})::String where {T<:Number}
