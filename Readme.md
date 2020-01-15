@@ -28,3 +28,12 @@
 3: Medium
 4: Slow
 5: None
+
+
+Potentially Plausible Plan:
+
+Take the last note sequence hit in the generated song
+Find all instances of that in all training data
+If the note sequence does not contain both colors, work backwards until it does, filtering as you go
+Now there should be an array containing all instances of the sequence
+Now work forwards, selecting the next sequence that most closely matches the time diff
