@@ -85,20 +85,34 @@ module BeatSaber
     notes = [rand(1:96), rand(1:96)]
     notesequence = []
 
-    for n in notetimes
+    n = 1
+    note = rand(1:2)
+    doubled = false
+    while n <= length(notetimes)
+      othernote = note % 2 + 1
+      othertuple = getnotedata(notes[othernote], othernote - 1)
       index = rand(1:96)
-      note = rand(1:2)
       notefound = false
       while !notefound
-        notetuple = getnotedata(index, note - 1)
-        desire = desirability(notetuple...)
-        if matrix[notes[note],index] == 1 && desire > rand()
-          notefound = true
-          notes[note] = index
-          push!(notesequence, createnote(notetuple..., note - 1, n))
-        else
-          index = (index + 12) % 96 + 1
+        if matrix[notes[note],index] == 1
+          notetuple = getnotedata(index, note - 1)
+          desire = desirability(notetuple...)
+          randval = rand()
+          if desire > randval && notetuple[1:2] != othertuple[1:2]
+            notefound = true
+            notes[note] = index
+            push!(notesequence, createnote(notetuple..., note - 1, notetimes[n]))
+            if desire > randval * 2 && !doubled && false
+              note = othernote
+              doubled = true
+            else
+              n += 1
+              note = rand(1:2)
+              doubled = false
+            end
+          end
         end
+        index = (index + 12) % 96 + 1
       end
     end
 
