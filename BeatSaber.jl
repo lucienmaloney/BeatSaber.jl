@@ -2,7 +2,7 @@ module BeatSaber
   using WAV
   using JSON
   using DSP
-  using DelimitedFiles
+  using StatsBase
 
   export mapsong
 
@@ -80,11 +80,47 @@ module BeatSaber
     return desire
   end
 
+  function desirability(note::Number)::Number
+    positions = [2 4 1 0.5 1 0.2 0.1 0.1 0.5 0.3 0.1 0.1]
+    directions = [2 2 1 1 0.5 0.5 0.5 0.5]
+    return positions[(note - 1) % 12 + 1] * directions[div(note - 1, 12) + 1]
+  end
+
+  function randnote(notes::Array)::Int
+    return sample(notes, Weights(notes .|> desirability))
+  end
+
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    matrix = readdlm("notes.csv")
-    notes = [rand(1:96), rand(1:96)]
+    patterns = JSON.parsefile("patterns.json")
+    α = patterns["sequence"]
+    β = patterns["concurrent"]
+    notes = [2, 2]
     notesequence = []
 
+    for n ∈ notetimes
+      note = rand(1:2)
+      redrange = α[notes[1]] ∩ β[notes[2]]
+      red = randnote(length(redrange) > 0 ? redrange : α[notes[1]])
+
+      bluerange = α[notes[2]] ∩ β[notes[1]]
+      blue = randnote(length(bluerange) > 0 ? bluerange : α[notes[2]])
+
+      rednote = createnote(getnotedata(red)..., 0, n)
+      bluenote = createnote(getnotedata(blue, 1)..., 1, n)
+
+      if blue ∈ β[red]
+        notes = [red, blue]
+        push!(notesequence, rednote)
+        push!(notesequence, bluenote)
+      elseif rand(1:2) == 1
+        notes[1] = red
+        push!(notesequence, rednote)
+      else
+        notes[2] = blue
+        push!(notesequence, bluenote)
+      end
+    end
+#=
     n = 1
     note = rand(1:2)
     doubled = false
@@ -115,7 +151,7 @@ module BeatSaber
         index = (index + 12) % 96 + 1
       end
     end
-
+=#
     return notesequence
   end
 
