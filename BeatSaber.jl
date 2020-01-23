@@ -40,16 +40,6 @@ module BeatSaber
     return peaks
   end
 
-  function createnote(x::Int, y::Int, direction::Int, color::Int, ntime::Number)
-    return Dict(
-      "_time" => ntime,
-      "_cutDirection" => direction,
-      "_type" => color,
-      "_lineLayer" => y,
-      "_lineIndex" => x,
-    )
-  end
-
   function getnotedata(note::Int, color::Int = 0)::Tuple
     x = (note - 1) % 4
     y = div((note - 1), 4) % 3
@@ -63,21 +53,18 @@ module BeatSaber
     end
   end
 
-  function desirability(x::Int, y::Int, direction::Int)::Number
-    desire = 1
-    if y == 0 && (x == 1 || x == 2)
-      desire *= 2
-    end
-    if y == 1 && (x == 1 || x == 2)
-      desire /= 3
-    end
-    if y == 2
-      desire *= 0.5
-    end
-    if direction >= 4
-      desire /= 2
-    end
-    return desire
+  function createnote(x::Int, y::Int, direction::Int, color::Int, ntime::Number)
+    return Dict(
+      "_time" => ntime,
+      "_cutDirection" => direction,
+      "_type" => color,
+      "_lineLayer" => y,
+      "_lineIndex" => x,
+    )
+  end
+
+  function createnote(note::Int, color::Int, ntime::Number)
+    return createnote(getnotedata(note, color)..., color, ntime)
   end
 
   function desirability(note::Number)::Number
@@ -105,8 +92,8 @@ module BeatSaber
       bluerange = α[notes[2]] ∩ β[notes[1]]
       blue = randnote(length(bluerange) > 0 ? bluerange : α[notes[2]])
 
-      rednote = createnote(getnotedata(red)..., 0, n)
-      bluenote = createnote(getnotedata(blue, 1)..., 1, n)
+      rednote = createnote(red, 0, n)
+      bluenote = createnote(blue, 1, n)
 
       if blue ∈ β[red]
         notes = [red, blue]
@@ -120,38 +107,7 @@ module BeatSaber
         push!(notesequence, bluenote)
       end
     end
-#=
-    n = 1
-    note = rand(1:2)
-    doubled = false
-    while n <= length(notetimes)
-      othernote = note % 2 + 1
-      othertuple = getnotedata(notes[othernote], othernote - 1)
-      index = rand(1:96)
-      notefound = false
-      while !notefound
-        if matrix[notes[note],index] == 1
-          notetuple = getnotedata(index, note - 1)
-          desire = desirability(notetuple...)
-          randval = rand()
-          if desire > randval && notetuple[1:2] != othertuple[1:2]
-            notefound = true
-            notes[note] = index
-            push!(notesequence, createnote(notetuple..., note - 1, notetimes[n]))
-            if desire > randval * 2 && !doubled && false
-              note = othernote
-              doubled = true
-            else
-              n += 1
-              note = rand(1:2)
-              doubled = false
-            end
-          end
-        end
-        index = (index + 12) % 96 + 1
-      end
-    end
-=#
+
     return notesequence
   end
 
