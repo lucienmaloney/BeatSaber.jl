@@ -7,7 +7,8 @@ module BeatSaber
   export mapsong
 
   function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
-    spec = spectrogram(data, 512 * 8)
+    audiorange = 1024
+    spec = spectrogram(data, audiorange * 2)
 
     flux = [0.0]
 
@@ -16,7 +17,7 @@ module BeatSaber
     end
 
     rolling = []
-    window = 10
+    window = 20
     len = length(flux)
     for i=1:len
       wmin = max(1, i - window)
@@ -24,7 +25,7 @@ module BeatSaber
       push!(rolling, sum(flux[wmin:wmax]) / (wmax - wmin + 1))
     end
 
-    seconds = length(flux) * 512 * 4 / bps
+    seconds = length(flux) * audiorange / bps
     times = LinRange(0, seconds, length(flux))
     difference = (flux - rolling) .|> (x -> max(x, 0))
 
@@ -68,7 +69,7 @@ module BeatSaber
   end
 
   function desirability(note::Number)::Number
-    positions = [2 4 1 0.5 1 0.2 0.1 0.1 0.5 0.3 0.1 0.1]
+    positions = [2 2 1 0.5 1 0.01 0.01 0.1 0.5 0.3 0.2 0.1]
     directions = [2 2 1 1 0.5 0.5 0.5 0.5]
     return positions[(note - 1) % 12 + 1] * directions[div(note - 1, 12) + 1]
   end
@@ -83,8 +84,10 @@ module BeatSaber
     β = patterns["concurrent"]
     notes = [2, 2]
     notesequence = []
+    prevtime = 0
 
     for n ∈ notetimes
+      timediff = n - prevtime
       note = rand(1:2)
       redrange = α[notes[1]] ∩ β[notes[2]]
       red = randnote(length(redrange) > 0 ? redrange : α[notes[1]])
@@ -95,7 +98,7 @@ module BeatSaber
       rednote = createnote(red, 0, n)
       bluenote = createnote(blue, 1, n)
 
-      if blue ∈ β[red]
+      if rand() > 0.4 && blue ∈ β[red] && timediff > 0.2
         notes = [red, blue]
         push!(notesequence, rednote)
         push!(notesequence, bluenote)
@@ -106,6 +109,7 @@ module BeatSaber
         notes[2] = blue
         push!(notesequence, bluenote)
       end
+      prevtime = n
     end
 
     return notesequence
@@ -142,15 +146,12 @@ module BeatSaber
     end
 
     wavfile = "$songname/$songname.wav"
-    if match(r".wav$"i, filename) == nothing
-      run(`ffmpeg -i $filename $wavfile`)
-    else
-      cp(filename, wavfile)
-    end
+    # dynamic range compression flag borrowed from https://medium.com/@jud.dagnall/dynamic-range-compression-for-audio-with-ffmpeg-and-compand-621fe2b1a892
+    run(`ffmpeg -i $filename -filter_complex "compand=attacks=0:points=-80/-900|-45/-15|-27/-9|0/-7|20/-7:gain=5" $wavfile`)
 
     write("$songname/ExpertPlus.dat", createmap(wavfile))
 
-    run(`ffmpeg -i $wavfile $songname/$songname.ogg`)
+    run(`ffmpeg -i $filename $songname/$songname.ogg`)
     rm(wavfile)
     mv("$songname/$songname.ogg", "$songname/song.egg")
 
