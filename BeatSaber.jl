@@ -31,9 +31,8 @@ module BeatSaber
 
     peaks = []
 
-    for i=2:(length(difference) - 1)
-      val = difference[i]
-      if val > difference[i - 1] && val > difference[i + 1]
+    for i=3:(length(difference) - 2)
+      if difference[i] == maximum(difference[(i - 2):(i + 2)]) > 0
         push!(peaks, times[i])
       end
     end
@@ -68,14 +67,16 @@ module BeatSaber
     return createnote(getnotedata(note, color)..., color, ntime)
   end
 
-  function desirability(note::Number)::Number
-    positions = [2 2 1 0.5 1 0.01 0.01 0.1 0.5 0.3 0.2 0.1]
+  function desirability(note::Number, ∇time::Number)::Number
+    positions = [2 3 2 1 2 0.01 0.01 0.3 1.5 1 0.5 0.2]
     directions = [2 2 1 1 0.5 0.5 0.5 0.5]
-    return positions[(note - 1) % 12 + 1] * directions[div(note - 1, 12) + 1]
+    prob = positions[(note - 1) % 12 + 1] * directions[div(note - 1, 12) + 1]
+    return prob ^ sqrt(1 / ∇time)
   end
 
-  function randnote(notes::Array)::Int
-    return sample(notes, Weights(notes .|> desirability))
+  function randnote(notes::Array, ∇time)::Int
+    probabilities = map(n -> desirability(n, ∇time), notes)
+    return sample(notes, Weights(probabilities))
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
@@ -88,12 +89,12 @@ module BeatSaber
 
     for n ∈ notetimes
       timediff = n - prevtime
-      note = rand(1:2)
+
       redrange = α[notes[1]] ∩ β[notes[2]]
-      red = randnote(length(redrange) > 0 ? redrange : α[notes[1]])
+      red = randnote(length(redrange) > 0 ? redrange : α[notes[1]], timediff)
 
       bluerange = α[notes[2]] ∩ β[notes[1]]
-      blue = randnote(length(bluerange) > 0 ? bluerange : α[notes[2]])
+      blue = randnote(length(bluerange) > 0 ? bluerange : α[notes[2]], timediff)
 
       rednote = createnote(red, 0, n)
       bluenote = createnote(blue, 1, n)
