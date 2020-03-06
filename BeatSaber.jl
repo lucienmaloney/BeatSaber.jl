@@ -3,6 +3,7 @@ module BeatSaber
   using JSON
   using DSP
   using StatsBase
+  using DelimitedFiles
 
   export mapsong
 
@@ -80,37 +81,21 @@ module BeatSaber
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    patterns = JSON.parsefile("patterns.json")
-    α = patterns["sequence"]
-    β = patterns["concurrent"]
+    samecolor = readdlm("samecolor.csv", Int)
+    diffcolor = readdlm("diffcolor.csv", Int)
+
     notes = [2, 2]
     notesequence = []
-    prevtime = 0
 
-    for n ∈ notetimes
-      timediff = n - prevtime
+    index = 0
+    for n in notetimes
+      color = index % 2
+      weights = samecolor[notes[1 + color], :] .* diffcolor[notes[2 - color], :]
 
-      redrange = α[notes[1]] ∩ β[notes[2]]
-      red = randnote(length(redrange) > 0 ? redrange : α[notes[1]], timediff)
-
-      bluerange = α[notes[2]] ∩ β[notes[1]]
-      blue = randnote(length(bluerange) > 0 ? bluerange : α[notes[2]], timediff)
-
-      rednote = createnote(red, 0, n)
-      bluenote = createnote(blue, 1, n)
-
-      if rand() > 0.4 && blue ∈ β[red] && timediff > 0.2
-        notes = [red, blue]
-        push!(notesequence, rednote)
-        push!(notesequence, bluenote)
-      elseif rand(1:2) == 1
-        notes[1] = red
-        push!(notesequence, rednote)
-      else
-        notes[2] = blue
-        push!(notesequence, bluenote)
-      end
-      prevtime = n
+      note = sample(1:96, Weights(weights .^ 0.5))
+      notes[color + 1] = note
+      push!(notesequence, createnote(note, color, n))
+      index += 1
     end
 
     return notesequence
