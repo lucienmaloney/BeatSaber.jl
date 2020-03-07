@@ -64,20 +64,8 @@ module BeatSaber
     )
   end
 
-  function createnote(note::Int, color::Int, ntime::Number)
-    return createnote(getnotedata(note, color)..., color, ntime)
-  end
-
-  function desirability(note::Number, ∇time::Number)::Number
-    positions = [2 3 2 1 2 0.01 0.01 0.3 1.5 1 0.5 0.2]
-    directions = [2 2 1 1 0.5 0.5 0.5 0.5]
-    prob = positions[(note - 1) % 12 + 1] * directions[div(note - 1, 12) + 1]
-    return prob ^ sqrt(1 / ∇time)
-  end
-
-  function randnote(notes::Array, ∇time)::Int
-    probabilities = map(n -> desirability(n, ∇time), notes)
-    return sample(notes, Weights(probabilities))
+  function createnote(note::Int, color::Bool, ntime::Number)
+    return createnote(getnotedata(note, Int(color))..., Int(color), ntime)
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
@@ -86,16 +74,28 @@ module BeatSaber
 
     notes = [2, 2]
     notesequence = []
+    prevcolor = rand(Bool)
 
-    index = 0
-    for n in notetimes
-      color = index % 2
+    function pushnote(color::Bool, t::Number)
       weights = samecolor[notes[1 + color], :] .* diffcolor[notes[2 - color], :]
-
-      note = sample(1:96, Weights(weights .^ 0.5))
+      note = sample(1:96, Weights(weights .|> sqrt))
       notes[color + 1] = note
-      push!(notesequence, createnote(note, color, n))
-      index += 1
+      prevcolor = color
+      push!(notesequence, createnote(note, color, t))
+    end
+
+    t = 0
+    for i in 1:length(notetimes)
+      newtime = notetimes[i]
+      if notetimes[i] - t < 0.2
+        pushnote(!prevcolor, newtime)
+      elseif rand() < 0.2
+        pushnote(rand(Bool), newtime)
+        pushnote(!prevcolor, newtime)
+      else
+        pushnote(rand(Bool), newtime)
+      end
+      t = newtime
     end
 
     return notesequence
@@ -143,7 +143,7 @@ module BeatSaber
 
     infostring = String(read("info.dat"))
     write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
-    cp("cover.jpg", "$songname/cover.jpg")
+    #cp("cover.jpg", "$songname/cover.jpg")
   end
 
 end
