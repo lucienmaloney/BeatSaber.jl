@@ -38,7 +38,9 @@ module BeatSaber
       end
     end
 
-    return peaks
+    # 2 second delay to avoid "hot starts"
+    audiooffset = 2
+    return peaks .+ audiooffset
   end
 
   function getnotedata(note::Int, color::Int = 0)::Tuple
@@ -132,18 +134,22 @@ module BeatSaber
     end
 
     wavfile = "$songname/$songname.wav"
-    # dynamic range compression flag borrowed from https://medium.com/@jud.dagnall/dynamic-range-compression-for-audio-with-ffmpeg-and-compand-621fe2b1a892
-    run(`ffmpeg -i $filename -filter_complex "compand=attacks=0:points=-80/-900|-45/-15|-27/-9|0/-7|20/-7:gain=5" $wavfile`)
+    # 2 second delay to avoid "hot starts"
+    delay = `-af "adelay=2000|2000"`
+    # dynamic range compression flag to improve fft processing
+    # https://medium.com/@jud.dagnall/dynamic-range-compression-for-audio-with-ffmpeg-and-compand-621fe2b1a892
+    drc = `-filter_complex "compand=attacks=0:points=-80/-900|-45/-15|-27/-9|0/-7|20/-7:gain=5"`
+
+    run(`ffmpeg -i $filename $drc $wavfile`)
 
     write("$songname/ExpertPlus.dat", createmap(wavfile))
 
-    run(`ffmpeg -i $filename $songname/$songname.ogg`)
+    run(`ffmpeg -i $filename $delay $songname/$songname.ogg`)
     rm(wavfile)
     mv("$songname/$songname.ogg", "$songname/song.egg")
 
     infostring = String(read("info.dat"))
     write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
-    #cp("cover.jpg", "$songname/cover.jpg")
   end
 
 end
