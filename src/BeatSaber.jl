@@ -14,10 +14,11 @@ julia> mapsongs(["song1.mp3", "song2.mp3", "../music/song3.ogg"])
 ```
 """
 module BeatSaber
-  using WAV
-  using JSON
-  using DSP
-  using StatsBase
+  using WAV: wavread
+  using JSON: json
+  using DSP: spectrogram
+  using StatsBase: sample, Weights
+  using Random: randstring
   include("data.jl")
 
   export mapsong, mapsongs
@@ -142,11 +143,12 @@ module BeatSaber
   end
 
   function mapsong(filename::String, songname::String)
-    if !isdir(songname)
-      mkdir(songname)
+    folder = randstring(['a':'z'; '0':'9'], 40) * "_" * songname
+    if !isdir(folder)
+      mkdir(folder)
     end
 
-    wavfile = "$songname/$songname.wav"
+    wavfile = "$folder/$songname.wav"
     # 2 second delay to avoid "hot starts"
     delay = `-af "adelay=2000|2000"`
     # dynamic range compression flag to improve fft processing
@@ -155,13 +157,13 @@ module BeatSaber
 
     run(`ffmpeg -i $filename $drc $wavfile`)
 
-    write("$songname/ExpertPlus.dat", createmap(wavfile))
+    write("$folder/ExpertPlus.dat", createmap(wavfile))
 
-    run(`ffmpeg -i $filename $delay $songname/$songname.ogg`)
+    run(`ffmpeg -i $filename $delay $folder/$songname.ogg`)
     rm(wavfile)
-    mv("$songname/$songname.ogg", "$songname/song.egg")
+    mv("$folder/$songname.ogg", "$folder/song.egg")
 
-    write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
+    write("$folder/info.dat", replace(infostring, "<SongName>" => songname))
   end
 
   function mapsong(filename::String)
