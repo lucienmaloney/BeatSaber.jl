@@ -51,6 +51,7 @@ module BeatSaber
     if color == 0
       return (x, y, direction)
     else
+      # Flip the x-coordinate and direction if note is blue
       directions = [0 1 3 2 5 4 7 6 8]
       return (3 - x, y, directions[direction + 1])
     end
@@ -89,9 +90,9 @@ module BeatSaber
     t = 0
     for i in 1:length(notetimes)
       newtime = notetimes[i]
-      if notetimes[i] - t < 0.2
+      if notetimes[i] - t < 0.2 # Have notes alternate between red and blue if timing is less than 0.2 seconds
         pushnote(!prevcolor, newtime)
-      elseif rand() < 0.2
+      elseif rand() < 0.2 # Red and blue notes appearing concurrently one-fifth of the time is good mapping, yeah
         pushnote(rand(Bool), newtime)
         pushnote(!prevcolor, newtime)
       else
