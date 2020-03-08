@@ -5,7 +5,7 @@ module BeatSaber
   using StatsBase
   using DelimitedFiles
 
-  export mapsong
+  export mapsong, mapsongs
 
   function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
     audiorange = 1024
@@ -151,6 +151,16 @@ module BeatSaber
 
     infostring = String(read("info.dat"))
     write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
+  end
+
+  function mapsong(filename::String)
+    mapsong(filename, splitext(splitdir(filename)[2])[1])
+  end
+
+  function mapsongs(filenames::Array{String})
+    for file in filenames
+      mapsong(file)
+    end
   end
 
 end
