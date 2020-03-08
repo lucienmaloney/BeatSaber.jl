@@ -3,7 +3,7 @@ module BeatSaber
   using JSON
   using DSP
   using StatsBase
-  using DelimitedFiles
+  include("data.jl")
 
   export mapsong, mapsongs
 
@@ -72,9 +72,6 @@ module BeatSaber
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    samecolor = readdlm("src/samecolor.csv", Int)
-    diffcolor = readdlm("src/diffcolor.csv", Int)
-
     notes = [2, 2]
     notesequence = []
     prevcolor = rand(Bool)
@@ -149,7 +146,6 @@ module BeatSaber
     rm(wavfile)
     mv("$songname/$songname.ogg", "$songname/song.egg")
 
-    infostring = String(read("src/info.dat"))
     write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
   end
 

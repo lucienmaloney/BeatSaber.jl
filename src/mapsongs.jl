@@ -1,4 +1,4 @@
-include("src/BeatSaber.jl")
+include("BeatSaber.jl")
 using .BeatSaber
 
 mapsongs(ARGS)
