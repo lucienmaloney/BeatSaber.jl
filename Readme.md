@@ -32,27 +32,35 @@ Because of the messy nature of the Quest ecosystem, the BMBF app is understandab
 For each color red and blue, there are 8 directions * 4 x-coordinates * 3 y-coordinates = 96 different notes possible (Note that dot-notes are intentionally excluded as they muddle the flow of maps). So each different kind of note can represented as an index from 1 to 96 where `noteindex = x + y * 4 + direction * 12 + 1`
 
 #### Colors
-0: Red
-1: Blue
+0: Red, 1: Blue
 
 #### Directions
-0: Up
-1: Down
-2: Left
-3: Right
-4: UpLeft
-5: UpRight
-6: DownLeft
-7: DownRight
+0: Up, 1: Down, 2: Left, 3: Right, 4: UpLeft, 5: UpRight, 6: DownLeft, 7: DownRight
 
 #### Locations
-2: (0,2) | (1,2) | (2,2) | (3,2)
-1: (0,1) | (1,1) | (2,1) | (3,1)
-0: (0,0) | (1,0) | (2,0) | (3,0)
-     0       1       2       3
+  0   |   1   |   2   |   3
+------|-------|-------|-------
+(0,2) | (1,2) | (2,2) | (3,2)
+(0,1) | (1,1) | (2,1) | (3,1)
+(0,0) | (1,0) | (2,0) | (3,0)
 
 ## Mapping
 
 There are two .csv files each containing a 96 * 96 matrix representing a weighted, directed graph from every note to every other note. `samecolor.csv` describes homogenous color patterns, red to red and blue to blue. `diffcolor.csv` describes the opposite, how a note of one color should affect the next note of the opposite color.
 
-A zero in the graph indicates a certain sequence should never happen. For example, there are zeros down the diagonal of `samecolor.csv` as good mapping dictates that a note should never be followed by an identical note. The non-zero values had their weights determined by mining data from existing Beat Saber maps. This was approaced from a quality over quantity perspective, so only 12 of the best flowing maps were chosen for extraction: A Thousand Miles, Bad Romance, Call Me Maybe, Firework, Hardware Store, Little Swing, Mr. Blue Sky, Numb, Pumped Up Kicks, Sk8er Boi, The Nights, and Uprising. A big thank you to the mappers of these songs for creating such good training data!
+A zero in the graph indicates a certain sequence should never happen. For example, there are zeros down the diagonal of `samecolor.csv` as good mapping dictates that a note should never be followed by an identical note. The non-zero values had their weights determined by mining data from existing Beat Saber maps. This was approaced from a quality over quantity perspective, so only 12 of the best flowing maps were chosen for extraction:
+
+* A Thousand Miles
+* Bad Romance
+* Call Me Maybe
+* Firework
+* Hardware Store
+* Little Swing
+* Mr. Blue Sky
+* Numb
+* Pumped Up Kicks
+* Sk8er Boi
+* The Nights
+* Uprising
+
+A big thank you to the mappers of these songs for creating such good training data!
