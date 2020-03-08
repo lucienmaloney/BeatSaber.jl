@@ -1,3 +1,18 @@
+"""
+BeatSaber.jl
+
+Used for converting audio files into folders containing Beat Saber maps
+
+Two exported methods: mapsong, mapsongs
+
+Examples:
+
+```julia-repl
+julia> mapsong("song1.mp3")
+julia> mapsong("song2.mp3", "newsongname")
+julia> mapsongs(["song1.mp3", "song2.mp3", "../music/song3.ogg"])
+```
+"""
 module BeatSaber
   using WAV
   using JSON
