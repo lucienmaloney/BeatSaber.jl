@@ -5,21 +5,23 @@ An automatic mapping tool for quickly generating Beat Saber courses from audio f
 ## Requirements
 
 * The Julia Language (see https://julialang.org/downloads/)
-* The following Julia packages: WAV, JSON, DSP, StatsBase, DelimitedFiles (see https://docs.julialang.org/en/v1/stdlib/Pkg/index.html)
+* The following Julia packages: WAV, JSON, DSP, and StatsBase (see https://docs.julialang.org/en/v1/stdlib/Pkg/index.html)
 * ffmpeg (see https://ffmpeg.org/download.html)
 * BMBF (Quest only, see https://bsaber.com/oculus-quest-custom-songs/)
 
 ## Usage
 
+You can download BeatSaber.jl as a zip or clone it with `git clone https://github.com/lucienmaloney/BeatSaber.jl.git`
+
 The easiest entry point is mapsongs.jl, which can be used like so:
 
-`julia mapsongs.jl songname.songextension`
+`julia src/mapsongs.jl songname.songextension`
 
 This will create a folder songname containing a Beat Saber map
 
 Any audio extension supported by ffmpeg should work, though the output will always be an .ogg file. Also, multiple songs can be mapped at once using a wildcard:
 
-`julia mapsongs.jl ~/somefolder/*.mp3`
+`julia src/mapsongs.jl ~/somefolder/*.mp3`
 
 The utility runs in O(n) time and in fact takes less time actually generating the maps than it does converting the audio files to the correct formats. However, the first time the utility is run, it might take considerably longer as packages get compiled for the first time.
 
@@ -46,9 +48,9 @@ For each color red and blue, there are 8 directions * 4 x-coordinates * 3 y-coor
 
 ## Mapping
 
-There are two .csv files each containing a 96 * 96 matrix representing a weighted, directed graph from every note to every other note. `samecolor.csv` describes homogenous color patterns, red to red and blue to blue. `diffcolor.csv` describes the opposite, how a note of one color should affect the next note of the opposite color.
+In `src/data.jl`, there are two UInt16 arrays each containing a 96 * 96 matrix representing a weighted, directed graph from every note to every other note. `samecolor` describes homogenous color patterns, red to red and blue to blue. `diffcolor` describes the opposite, how a note of one color should affect the next note of the opposite color.
 
-A zero in the graph indicates a certain sequence should never happen. For example, there are zeros down the diagonal of `samecolor.csv` as good mapping dictates that a note should never be followed by an identical note. The non-zero values had their weights determined by mining data from existing Beat Saber maps. This was approaced from a quality over quantity perspective, so only 12 of the best flowing maps were chosen for extraction:
+A zero in the graph indicates a certain sequence should never happen. For example, there are zeros down the diagonal of `samecolor` as good mapping dictates that a note should never be followed by an identical note. The non-zero values had their weights determined by mining data from existing Beat Saber maps. This was approaced from a quality over quantity perspective, so only 12 of the best flowing maps were chosen for extraction:
 
 * A Thousand Miles
 * Bad Romance
@@ -63,4 +65,4 @@ A zero in the graph indicates a certain sequence should never happen. For exampl
 * The Nights
 * Uprising
 
-A big thank you to the mappers of these songs for creating such good training data!
+A big thank you to the mappers of these songs for creating such useful training data!
