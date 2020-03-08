@@ -72,8 +72,8 @@ module BeatSaber
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    samecolor = readdlm("samecolor.csv", Int)
-    diffcolor = readdlm("diffcolor.csv", Int)
+    samecolor = readdlm("src/samecolor.csv", Int)
+    diffcolor = readdlm("src/diffcolor.csv", Int)
 
     notes = [2, 2]
     notesequence = []
@@ -149,7 +149,7 @@ module BeatSaber
     rm(wavfile)
     mv("$songname/$songname.ogg", "$songname/song.egg")
 
-    infostring = String(read("info.dat"))
+    infostring = String(read("src/info.dat"))
     write("$songname/info.dat", replace(infostring, "<SongName>" => songname))
   end
 
