@@ -1,4 +1,4 @@
-include("BeatSaber.jl")
+include("src/BeatSaber.jl")
 using .BeatSaber
 
 for file in ARGS
