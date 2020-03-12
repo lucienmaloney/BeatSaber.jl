@@ -88,14 +88,21 @@ module BeatSaber
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    notes = [2, 2]
+    notesa = [14, 14]
+    notesb = [2, 2]
     notesequence = []
     prevcolor = rand(Bool)
 
     function pushnote(color::Bool, t::Number)
-      weights = samecolor[notes[1 + color], :] .* diffcolor[notes[2 - color], :]
+      weights =
+        samecolor[notesb[1 + color], :] .*
+        diffcolor[notesb[2 - color], :] .*
+        samecolor2[notesa[1 + color], :] .*
+        diffcolor2[notesa[2 - color], :]
+
       note = sample(1:96, Weights(weights .|> sqrt))
-      notes[color + 1] = note
+      notesa[color + 1] = notesb[color + 1]
+      notesb[color + 1] = note
       prevcolor = color
       push!(notesequence, createnote(note, color, t))
     end
