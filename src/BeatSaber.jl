@@ -150,6 +150,7 @@ module BeatSaber
   end
 
   function mapsong(filename::String, songname::String)
+    songname = replace(rawname, "." => "") # Remove any periods because they screw up BMBF
     folder = randstring(['a':'z'; '0':'9'], 40) * "_" * songname
     if !isdir(folder)
       mkdir(folder)
@@ -174,8 +175,7 @@ module BeatSaber
   end
 
   function mapsong(filename::String)
-    rawname = splitext(splitdir(filename)[2])[1] # Isolate the name of the song itself
-    songname = replace(rawname, "." => "") # Remove any periods because they screw up BMBF
+    songname = splitext(splitdir(filename)[2])[1] # Isolate the name of the song itself
     mapsong(filename, songname)
   end
 
