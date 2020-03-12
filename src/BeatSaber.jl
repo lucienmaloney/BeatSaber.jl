@@ -174,7 +174,9 @@ module BeatSaber
   end
 
   function mapsong(filename::String)
-    mapsong(filename, splitext(splitdir(filename)[2])[1])
+    rawname = splitext(splitdir(filename)[2])[1] # Isolate the name of the song itself
+    songname = replace(rawname, "." => "") # Remove any periods because they screw up BMBF
+    mapsong(filename, songname)
   end
 
   function mapsongs(filenames::Array{String})
