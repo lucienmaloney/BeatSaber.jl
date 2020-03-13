@@ -182,7 +182,7 @@ module BeatSaber
 
   function expandasterisk(filename::String)::Array{String}
     path, file = splitdir(filename)
-    fileregex = Regex("\\Q" * replace(file, "*" => "\\E.*\\Q") * "\\E")
+    fileregex = Regex("^\\Q" * replace(file, "*" => "\\E.*\\Q") * "\\E\$")
     files = filter(s -> occursin(fileregex, s), readdir(path))
     # After rejoining files to their paths,
     #   filter out any strings containing asterisks to prevent an infinite recursive loop
