@@ -1,16 +1,22 @@
 """
 BeatSaber.jl
 
-Used for converting audio files into folders containing Beat Saber maps
+Convert audio files into folders containing Beat Saber maps
 
-Two exported methods: mapsong, mapsongs
+Three exported methods: mapsong, mapsongs, mapurl
+
+mapurl requires youtube-dl installed and all three methods require ffmpeg
 
 Examples:
 
 ```julia-repl
 julia> mapsong("song1.mp3")
 julia> mapsong("song2.mp3", "newsongname")
+julia> mapsong("*.wav")
 julia> mapsongs(["song1.mp3", "song2.mp3", "../music/song3.ogg"])
+julia> mapsongs(["*.wav", "path/to/thing.mp3", "~/.secretmusic/song.ogg"])
+julia> mapurl("https://www.youtube.com/watch?v=MRJILK3NxSM")
+julia> mapurl("https://www.youtube.com/playlist?list=PLlt7a22v678y-fF2Usu3Q5sMxGWYz9xAL")
 ```
 """
 module BeatSaber
@@ -21,7 +27,7 @@ module BeatSaber
   using Random: randstring
   include("data.jl")
 
-  export mapsong, mapsongs
+  export mapsong, mapsongs, mapurl
 
   function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
     audiorange = 1024
@@ -174,15 +180,43 @@ module BeatSaber
     write("$folder/info.dat", replace(infostring, "<SongName>" => songname))
   end
 
+  function expandasterisk(filename::String)::Array{String}
+    path, file = splitdir(filename)
+    fileregex = Regex("\\Q" * replace(file, "*" => "\\E.*\\Q") * "\\E")
+    files = filter(s -> occursin(fileregex, s), readdir(path))
+    # After rejoining files to their paths,
+    #   filter out any strings containing asterisks to prevent an infinite recursive loop
+    return filter(f -> !occursin("*", f), map(f -> joinpath(path, f), files))
+  end
+
   function mapsong(filename::String)
-    songname = splitext(splitdir(filename)[2])[1] # Isolate the name of the song itself
-    mapsong(filename, songname)
+    # If provided name contains an asterisk, treat it as a wildcard
+    if occursin("*", filename)
+      mapsongs(expandasterisk(filename))
+    else
+      songname = splitext(splitdir(filename)[2])[1] # Isolate the name of the song itself
+      mapsong(filename, songname)
+    end
   end
 
   function mapsongs(filenames::Array{String})
     for file in filenames
       mapsong(file)
     end
+  end
+
+  function mapurl(url::String)
+    temp = ".beatsaberjltempdir" # If this is an existing folder on anyone's system, I'll eat my hat
+    mkdir(temp)
+    try
+      # Download files as wav.
+      # They'll be big, but fast to process and end up deleted anyway, so size doesn't matter
+      run(`youtube-dl --extract-audio --audio-format wav -o "$temp/%(title)s.%(ext)s" $url`)
+      mapsongs("$temp/" .* readdir(temp))
+    catch e
+      @error "Error using youtude-dl. Check to make sure it's installed"
+    end
+    rm(temp, recursive=true)
   end
 
 end

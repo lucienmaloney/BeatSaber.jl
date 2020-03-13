@@ -8,6 +8,7 @@ An automatic mapping tool for quickly generating Beat Saber courses from audio f
 * The following Julia packages: WAV, JSON, DSP, and StatsBase (see https://docs.julialang.org/en/v1/stdlib/Pkg/index.html)
 * ffmpeg (see https://ffmpeg.org/download.html)
 * BMBF (Quest only, see https://bsaber.com/oculus-quest-custom-songs/)
+* youtube-dl (Optional, only needed for mapurl.jl, see https://youtube-dl.org/)
 
 ## Usage
 
@@ -23,11 +24,15 @@ Any audio extension supported by ffmpeg should work, though the output will alwa
 
 `julia src/mapsongs.jl ~/somefolder/*.mp3`
 
+If you have youtube-dl installed, you can download songs or playlists from YouTube or elsewhere (there are a surprising number of sites supported) directly form a url:
+
+`julia src/mapurl.jl "https://www.youtube.com/watch?v=MRJILK3NxSM"`
+
 The utility runs in O(n) time and in fact takes less time actually generating the maps than it does converting the audio files to the correct formats. However, the first time the utility is run, it might take considerably longer as packages get compiled for the first time.
 
 With the maps generated, the new folders should be moved or copied over into the CustomSongs directory of BeatSaber. On the Quest with BMBF installed, this can be found in QuestDrive:/BMBFData/CustomSongs. Next, unplug the quest, put it on, and run the BMBF app. Navigate to the tools tab at the top, and then click "Reload Songs Folder". Finally, click "Sync to Beat Saber", and the new songs should be ready to play.
 
-Because of the messy nature of the Quest ecosystem, the BMBF app is understandably a bit buggy sometimes. It may be necessary to close and reopen the app or to hit "Reload Songs Folder" multiple times to get it working. Additionally, song names with special characters in them sometimes cause problems, so it's not a bad idea to remove those from song file names before running the utility. Letters, numbers, spaces, dashes, underscores, brackets, and parentheses all seem to work fine, though.
+Because of the messy nature of the Quest ecosystem, the BMBF app is understandably a bit buggy sometimes. It may be necessary to close and reopen the app or to hit "Reload Songs Folder" multiple times to get it working. Additionally, song names with special characters in them sometimes cause problems, so it's not a bad idea to remove those from song file names before running the utility. Asterisks especially should be removed from file names because the program will think it's a pattern match. Letters, numbers, spaces, dashes, underscores, brackets, and parentheses all seem to work fine, though.
 
 ## Patterns
 
