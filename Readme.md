@@ -10,6 +10,7 @@ An automatic mapping tool for quickly generating Beat Saber courses from audio f
 * BMBF (Quest only, see https://bsaber.com/oculus-quest-custom-songs/)
 * youtube-dl (Optional, only needed for mapurl.jl, see https://youtube-dl.org/)
 
+* if you are on windows FFmpeg and Julia must be added to PATH 
 ## Usage
 
 You can download BeatSaber.jl as a zip or clone it with `git clone https://github.com/lucienmaloney/BeatSaber.jl.git`
@@ -73,3 +74,15 @@ A zero in the graph indicates a certain sequence should never happen. For exampl
 These maps were chosen not because they're necessarily the best of the best (although I think they're all pretty good), but because they contain simple and understandable flows for the algorithm to pick up on. As the program becomes more complex and robust, it may be possible to feed it more dynamic data to get a greater variety of maps. But for now, these are the ones being used.
 
 A big thank you to the mappers of these songs for creating such useful training data!
+
+## adding to path
+
+open the file explorer 
+right click on "this PC"
+click on "properties" 
+and then "advanced system settings" (it will be off to the left)
+then go to "enviornment variables"
+double click on "PATH"
+click "browse"
+go to the FFmpeg folder (you should have placed it in the "C:\Users\yourusername\FFmpeg" folder or "C:\FFmpeg") and click ok
+Do the same thing for Julia
