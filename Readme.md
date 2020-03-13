@@ -78,11 +78,21 @@ A big thank you to the mappers of these songs for creating such useful training 
 ## adding to path
 
 open the file explorer 
+
 right click on "this PC"
+
 click on "properties" 
+
 and then "advanced system settings" (it will be off to the left)
+
 then go to "enviornment variables"
+
 double click on "PATH"
+
 click "browse"
+
 go to the FFmpeg folder (you should have placed it in the "C:\Users\yourusername\FFmpeg" folder or "C:\FFmpeg") and click ok
+
 Do the same thing for Julia
+
+Now download the maptool.zip and follow the enclosed instructions
