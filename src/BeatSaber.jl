@@ -104,9 +104,13 @@ module BeatSaber
         samecolor[notesb[1 + color], :] .*
         diffcolor[notesb[2 - color], :] .*
         samecolor2[notesa[1 + color], :] .*
-        diffcolor2[notesa[2 - color], :]
+        diffcolor2[notesa[2 - color], :] .*
+        notesallowed
 
-      note = sample(1:96, Weights(weights .|> sqrt))
+      weights[notesb[2 - color]] *= 100
+      weights = weights .|> x -> min(x, 50000)
+
+      note = sample(1:96, Weights(weights .^ 0.5))
       notesa[color + 1] = notesb[color + 1]
       notesb[color + 1] = note
       prevcolor = color
