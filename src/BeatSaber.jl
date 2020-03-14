@@ -94,12 +94,13 @@ module BeatSaber
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    notesa = [14, 14]
-    notesb = [2, 2]
+    notesb = [2, 2] # The previous red and blue notes, respectively
+    notesa = [14, 14] # The red and blue notes before the previous red and blue notes, respectively
     notesequence = []
     prevcolor = rand(Bool)
 
-    function pushnote(color::Bool, t::Number)
+    function pushnote(color::Bool, t::Number, ∇t::Number)
+      # Multiply together 5 96-element weight arrays to get one ultimate array
       weights =
         samecolor[notesb[1 + color], :] .*
         diffcolor[notesb[2 - color], :] .*
@@ -107,10 +108,19 @@ module BeatSaber
         diffcolor2[notesa[2 - color], :] .*
         notesallowed
 
+      # Giving extra weight to mirrored red and blue notes helps keep hands in sync
       weights[notesb[2 - color]] *= 100
-      weights = weights .|> x -> min(x, 50000)
 
-      note = sample(1:96, Weights(weights .^ 0.5))
+      # Capping the weight improves mapping
+      # This fact was discovered on accident through a bug, but it's a feature now!
+      cap = ∇t < 0.2 ? 2000 / (∇t ^ 2) : 50000
+      weights = weights .|> x -> min(x, cap)
+
+      # Slightly even out the weights so common patterns don't dominate
+      power = ∇t < 0.2 ? 1 - (∇t * 2.5) : 0.5
+      note = sample(1:96, Weights(weights .^ power))
+
+      # Set new previous notes and color
       notesa[color + 1] = notesb[color + 1]
       notesb[color + 1] = note
       prevcolor = color
@@ -118,15 +128,17 @@ module BeatSaber
     end
 
     t = 0
+    timediff = 0
     for i in 1:length(notetimes)
       newtime = notetimes[i]
-      if notetimes[i] - t < 0.2 # Have notes alternate between red and blue if timing is less than 0.2 seconds
-        pushnote(!prevcolor, newtime)
+      timediff = newtime - t
+      if timediff < 0.2 # Have notes alternate between red and blue if timing is less than 0.2 seconds
+        pushnote(!prevcolor, newtime, timediff)
       elseif rand() < 0.2 # Red and blue notes appearing concurrently one-fifth of the time is good mapping, yeah
-        pushnote(rand(Bool), newtime)
-        pushnote(!prevcolor, newtime)
+        pushnote(rand(Bool), newtime, timediff)
+        pushnote(!prevcolor, newtime, timediff)
       else
-        pushnote(rand(Bool), newtime)
+        pushnote(rand(Bool), newtime, timediff)
       end
       t = newtime
     end
