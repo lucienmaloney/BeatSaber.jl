@@ -211,11 +211,12 @@ module BeatSaber
     try
       # Download files as wav.
       # They'll be big, but fast to process and end up deleted anyway, so size doesn't matter
-      run(`youtube-dl --extract-audio --audio-format wav -o "$temp/%(title)s.%(ext)s" $url`)
-      mapsongs("$temp/" .* readdir(temp))
+      run(`youtube-dl -i --extract-audio --audio-format wav -o "$temp/%(title)s.%(ext)s" $url`)
     catch e
-      @error "Error using youtude-dl. Check to make sure it's installed"
+      @error "Error retrieving audio:"
+      @error "Either youtube-dl is not installed, the url was malformed, or one or more videos were unavailable"
     end
+    mapsongs("$temp/" .* readdir(temp))
     rm(temp, recursive=true)
   end
 
