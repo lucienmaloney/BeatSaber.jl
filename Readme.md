@@ -2,18 +2,17 @@
 
 An automatic mapping tool for quickly generating Beat Saber courses from audio files.
 
-## Requirements
+## Requirements/Setup
 
 * The Julia Language (see https://julialang.org/downloads/)
-* The following Julia packages: WAV, JSON, DSP, and StatsBase (see https://docs.julialang.org/en/v1/stdlib/Pkg/index.html). Install:
-  `julia src/setup.jl`
-* ffmpeg (see https://ffmpeg.org/download.html)
-* BMBF (Quest only, see https://bsaber.com/oculus-quest-custom-songs/)
+* FFmpeg (see https://ffmpeg.org/download.html)
 * youtube-dl (Optional, only needed for mapurl.jl, see https://youtube-dl.org/)
 
-## Usage
-
 You can download BeatSaber.jl as a zip or clone it with `git clone https://github.com/lucienmaloney/BeatSaber.jl.git`
+
+Navigate to the BeatSaber.jl directory, and run `julia src/setup.jl` to install the required packages.
+
+## Usage
 
 The easiest entry point is mapsongs.jl, which can be used like so:
 
