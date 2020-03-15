@@ -1,7 +1,7 @@
 name = "BeatSaber"
 uuid = "7b7eb2a5-3972-5874-f93c-1077bfa45a05"
 authors = ["Lucien"]
-version = "1.0.0"
+version = "1.1.0"
 
 [deps]
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
