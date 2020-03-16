@@ -189,7 +189,7 @@ module BeatSaber
 
     write("$folder/ExpertPlus.dat", createmap(wavfile))
 
-    run(`ffmpeg -i $filename -map_metadata -1 -vn $delay $folder/$songname.ogg`)
+    run(`ffmpeg -i $filename -map_metadata -1 -vn -ab 320k $delay $folder/$songname.ogg`)
     rm(wavfile)
     mv("$folder/$songname.ogg", "$folder/song.egg")
 
