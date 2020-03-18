@@ -31,29 +31,34 @@ module BeatSaber
 
   function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
     audiorange = 1024
-    spec = spectrogram(data, audiorange * 2)
+    spec = spectrogram(data, audiorange * 2).power
+    len = size(spec)[2]
 
     flux = [0.0]
+    roll = []
+    rolling = 0
+    window = 20
 
-    for i=2:size(spec.power)[2]
-      push!(flux, sum((spec.power[:,i] - spec.power[:,i-1]) .|> (x -> max(x, 0))))
+    for i=2:len
+      push!(flux, sum(spec[:,i] - spec[:,i-1]))
     end
 
-    rolling = []
-    window = 20
-    len = length(flux)
+    rolling += sum(flux[1:window])
     for i=1:len
-      wmin = max(1, i - window)
-      wmax = min(len, i + window)
-      push!(rolling, sum(flux[wmin:wmax]) / (wmax - wmin + 1))
+      if i - (window + 1) >= 1
+        rolling -= flux[i - (window + 1)]
+      end
+      if i + window <= len
+        rolling += flux[i + window]
+      end
+      push!(roll, 10 + rolling / window)
     end
 
     seconds = length(flux) * audiorange / bps
     times = LinRange(0, seconds, length(flux))
-    difference = (flux - rolling) .|> (x -> max(x, 0))
 
     peaks = []
-
+    difference = flux .- roll
     for i=3:(length(difference) - 2)
       if difference[i] == maximum(difference[(i - 2):(i + 2)]) > 0
         push!(peaks, times[i])
@@ -179,17 +184,17 @@ module BeatSaber
     end
 
     wavfile = "$folder/$songname.wav"
-    # 2 second delay to avoid "hot starts"
-    delay = `-af "adelay=2000|2000"`
-    # dynamic range compression flag to improve fft processing
-    # https://medium.com/@jud.dagnall/dynamic-range-compression-for-audio-with-ffmpeg-and-compand-621fe2b1a892
-    drc = `-filter_complex "compand=attacks=0:points=-80/-900|-45/-15|-27/-9|0/-7|20/-7:gain=5"`
 
-    run(`ffmpeg -i $filename $drc $wavfile`)
+    run(`ffmpeg -i $filename $wavfile`)
 
     write("$folder/ExpertPlus.dat", createmap(wavfile))
 
-    run(`ffmpeg -i $filename -map_metadata -1 -vn $delay $folder/$songname.ogg`)
+    # 2 second delay to avoid "hot starts"
+    delay = `-af "adelay=2000|2000"`
+    # Strip all metadata because it causes problems loading song
+    clear = `-map_metadata -1 -vn`
+    run(`ffmpeg -i $wavfile $clear $delay $folder/$songname.ogg`)
+
     rm(wavfile)
     mv("$folder/$songname.ogg", "$folder/song.egg")
 
