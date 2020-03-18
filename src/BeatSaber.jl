@@ -30,19 +30,22 @@ module BeatSaber
   export mapsong, mapsongs, mapurl
 
   function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
-    audiorange = 1024
+    audiorange = 1024 # The fft window
     spec = spectrogram(data, audiorange * 2).power
     len = size(spec)[2]
+    times = LinRange(0, len * audiorange / bps, len)
 
     flux = [0.0]
-    roll = []
+    difference = []
     rolling = 0
     window = 20
 
+    # Calculate spectral flux, i.e. how much magnitudes of frequencies change between windows
     for i=2:len
       push!(flux, sum(spec[:,i] - spec[:,i-1]))
     end
 
+    # Get a rolling average of the flux and then calculate the difference between that and the flux
     rolling += sum(flux[1:window])
     for i=1:len
       if i - (window + 1) >= 1
@@ -51,16 +54,14 @@ module BeatSaber
       if i + window <= len
         rolling += flux[i + window]
       end
-      push!(roll, 10 + rolling / window)
+      push!(difference, flux[i] - (rolling / window))
     end
 
-    seconds = length(flux) * audiorange / bps
-    times = LinRange(0, seconds, length(flux))
-
+    # Get peaks from difference
     peaks = []
-    difference = flux .- roll
-    for i=3:(length(difference) - 2)
-      if difference[i] == maximum(difference[(i - 2):(i + 2)]) > 0
+    threshold = 10
+    for i=3:(len - 2)
+      if difference[i] == maximum(difference[(i - 2):(i + 2)]) > threshold
         push!(peaks, times[i])
       end
     end
@@ -185,15 +186,15 @@ module BeatSaber
 
     wavfile = "$folder/$songname.wav"
 
-    run(`ffmpeg -i $filename $wavfile`)
+    # Strip all metadata because it causes problems loading song
+    clear = `-map_metadata -1 -vn`
+    run(`ffmpeg -i $filename $clear $wavfile`)
 
     write("$folder/ExpertPlus.dat", createmap(wavfile))
 
     # 2 second delay to avoid "hot starts"
     delay = `-af "adelay=2000|2000"`
-    # Strip all metadata because it causes problems loading song
-    clear = `-map_metadata -1 -vn`
-    run(`ffmpeg -i $wavfile $clear $delay $folder/$songname.ogg`)
+    run(`ffmpeg -i $wavfile $delay $folder/$songname.ogg`)
 
     rm(wavfile)
     mv("$folder/$songname.ogg", "$folder/song.egg")
