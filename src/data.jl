@@ -11,7 +11,7 @@ infostring = """
   "_shufflePeriod": 0,
   "_previewStartTime": 2,
   "_previewDuration": 0,
-  "_songFilename": "song.egg",
+  "_songFilename": "song.ogg",
   "_coverImageFilename": "cover.jpg",
   "_environmentName": "DefaultEnvironment",
   "_difficultyBeatmapSets": [
@@ -22,7 +22,7 @@ infostring = """
           "_difficulty": "ExpertPlus",
           "_difficultyRank": 9,
           "_beatmapFilename": "ExpertPlus.dat",
-          "_noteJumpMovementSpeed": 0,
+          "_noteJumpMovementSpeed": 20,
           "_noteJumpStartBeatOffset": 0
         }
       ]

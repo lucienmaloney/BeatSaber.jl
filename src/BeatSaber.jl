@@ -35,16 +35,10 @@ module BeatSaber
     len = size(spec)[2]
     times = LinRange(0, len * audiorange / bps, len)
 
-    flux = [0.0]
-    difference = []
+    flux = reduce(+, spec, dims=1)
+    difference = Float64[]
     rolling = 0
     window = 20
-
-    # Calculate spectral flux, i.e. how much magnitudes of frequencies change between windows
-    for i=2:len
-      push!(flux, sum(spec[:,i] - spec[:,i-1]))
-    end
-
     # Get a rolling average of the flux and then calculate the difference between that and the flux
     rolling += sum(flux[1:window])
     for i=1:len
@@ -54,12 +48,13 @@ module BeatSaber
       if i + window <= len
         rolling += flux[i + window]
       end
-      push!(difference, flux[i] - (rolling / window))
+      avg = rolling / (window * 2 + 1) * 1.2 + 0.5
+      push!(difference, flux[i] - avg)
     end
 
     # Get peaks from difference
-    peaks = []
-    threshold = 10
+    peaks = Float64[]
+    threshold = 0
     for i=3:(len - 2)
       if difference[i] == maximum(difference[(i - 2):(i + 2)]) > threshold
         push!(peaks, times[i])
@@ -80,7 +75,7 @@ module BeatSaber
       return (x, y, direction)
     else
       # Flip the x-coordinate and direction if note is blue
-      directions = [0 1 3 2 5 4 7 6 8]
+      directions = Int[0 1 3 2 5 4 7 6 8]
       return (3 - x, y, directions[direction + 1])
     end
   end
@@ -100,9 +95,9 @@ module BeatSaber
   end
 
   function timestonotes(notetimes::Array{<:Number})::Array{Dict}
-    notesb = [2, 2] # The previous red and blue notes, respectively
-    notesa = [14, 14] # The red and blue notes before the previous red and blue notes, respectively
-    notesequence = []
+    notesb = Int[2, 2] # The previous red and blue notes, respectively
+    notesa = Int[14, 14] # The red and blue notes before the previous red and blue notes, respectively
+    notesequence = Dict{String, Number}[]
     prevcolor = rand(Bool)
 
     function pushnote(color::Bool, t::Number, ∇t::Number)
@@ -194,10 +189,9 @@ module BeatSaber
 
     # 2 second delay to avoid "hot starts"
     delay = `-af "adelay=2000|2000"`
-    run(`ffmpeg -i $wavfile $delay $folder/$songname.ogg`)
+    run(`ffmpeg -i $wavfile $delay $folder/song.ogg`)
 
     rm(wavfile)
-    mv("$folder/$songname.ogg", "$folder/song.egg")
 
     write("$folder/info.dat", replace(infostring, "<SongName>" => songname))
   end
