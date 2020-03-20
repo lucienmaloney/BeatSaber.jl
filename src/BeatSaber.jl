@@ -29,7 +29,7 @@ module BeatSaber
 
   export mapsong, mapsongs, mapurl
 
-  function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{T} where {T<:Number}
+  function getpeaksfromaudio(data::Array{T}, bps::Number)::Array{Array{T}} where {T<:Number}
     audiorange = 1024 # The fft window
     spec = spectrogram(data, audiorange * 2).power
     len = size(spec)[2]
@@ -48,22 +48,26 @@ module BeatSaber
       if i + window <= len
         rolling += flux[i + window]
       end
-      avg = rolling / (window * 2 + 1) * 1.2 + 0.5
+      avg = rolling / (window * 2 + 1) + 0.5
       push!(difference, flux[i] - avg)
     end
 
-    # Get peaks from difference
-    peaks = Float64[]
-    threshold = 0
-    for i=3:(len - 2)
-      if difference[i] == maximum(difference[(i - 2):(i + 2)]) > threshold
-        push!(peaks, times[i])
+    # Get peaks (aka note placement times) from difference
+    # 5 different arrays for 5 different difficulties
+    peaks = [Float64[], Float64[], Float64[], Float64[], Float64[]]
+    # The lower the difficulty, the larger the range a note has to dominate over
+    ranges = [10 7 5 3 2]
+    for j in 1:5
+      r = ranges[j]
+      for i=(r + 1):(len - r)
+        if difference[i] == maximum(difference[(i - r):(i + r)]) > 0
+          # 2 second delay to avoid "hot starts"
+          push!(peaks[j], times[i] + 2)
+        end
       end
     end
 
-    # 2 second delay to avoid "hot starts"
-    audiooffset = 2
-    return peaks .+ audiooffset
+    return peaks
   end
 
   function getnotedata(note::Int, color::Int = 0)::Tuple
@@ -94,7 +98,7 @@ module BeatSaber
     return createnote(getnotedata(note, Int(color))..., Int(color), ntime)
   end
 
-  function timestonotes(notetimes::Array{<:Number})::Array{Dict}
+  function timestonotes(notetimes::Array{<:Number}, threshold::Number)::Array{Dict}
     notesb = Int[2, 2] # The previous red and blue notes, respectively
     notesa = Int[14, 14] # The red and blue notes before the previous red and blue notes, respectively
     notesequence = Dict{String, Number}[]
@@ -117,8 +121,9 @@ module BeatSaber
       cap = ∇t < 0.2 ? 2000 / (∇t ^ 2) : 50000
       weights = weights .|> x -> min(x, cap)
 
-      # Slightly even out the weights so common patterns don't dominate
-      power = ∇t < 0.2 ? 1 - (∇t * 2.5) : 0.5
+      # Raise weights to a fractional power so common patterns don't dominate
+      # Fraction decreases linearly from 1 to 0.5 on domain 0:threshold and is 0.5 for all values above threshold
+      power = ∇t > threshold ? 0.5 : 0.5 + 0.5 * (threshold - ∇t) / threshold
       note = sample(1:96, Weights(weights .^ power))
 
       # Set new previous notes and color
@@ -147,10 +152,8 @@ module BeatSaber
     return notesequence
   end
 
-  function createbeatmapJSON(notetimes::Array{T})::String where {T<:Number}
-    notes = timestonotes(notetimes)
-
-    songData = Dict(
+  function createbeatmapJSON(notes::Array{Dict})::String
+    songdata = Dict(
       "_version" => "2.0.0",
       "_BPMChanges" => [],
       "_events" => [],
@@ -159,17 +162,26 @@ module BeatSaber
       "_bookmarks" => [],
     )
 
-    return json(songData)
+    return json(songdata)
   end
 
-  function createmap(filename::String)::String
+  function createbeatmapJSONs(notetimes::Array{Array{T}})::Array{String} where {T<:Number}
+    difficulties = Number[2, 1, 0.5, 0.3, 0.2]
+
+    maps = String[]
+    for i=1:5
+      push!(maps, timestonotes(notetimes[i], difficulties[i]) |> createbeatmapJSON)
+    end
+
+    return maps
+  end
+
+  function createmaps(filename::String)::Array{String}
     rawdata, bps = wavread(filename)
     data = reduce(+, rawdata, dims=2)[:,1] # Merge channels down to mono
 
     peaks = getpeaksfromaudio(data, bps)
-    json = createbeatmapJSON(peaks)
-
-    return json
+    return createbeatmapJSONs(peaks)
   end
 
   function mapsong(filename::String, songname::String)
@@ -185,7 +197,12 @@ module BeatSaber
     clear = `-map_metadata -1 -vn`
     run(`ffmpeg -i $filename $clear $wavfile`)
 
-    write("$folder/ExpertPlus.dat", createmap(wavfile))
+    maps = createmaps(wavfile)
+    write("$folder/Easy.dat", maps[1])
+    write("$folder/Normal.dat", maps[2])
+    write("$folder/Hard.dat", maps[3])
+    write("$folder/Expert.dat", maps[4])
+    write("$folder/ExpertPlus.dat", maps[5])
 
     # 2 second delay to avoid "hot starts"
     delay = `-af "adelay=2000|2000"`
