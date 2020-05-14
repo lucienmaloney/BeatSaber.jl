@@ -2,6 +2,8 @@
 
 An automatic mapping tool for quickly generating Beat Saber courses from audio files.
 
+As of 2020-05-14, BeatSaber.jl has been ported to JavaScript and can be run in the browser- no installation required- at https://bsautomapper.com. The code for the site can be found at https://github.com/lucienmaloney/BeatSaberMappingSite. But if you still want to run the program natively, continue on.
+
 ## Requirements/Setup
 
 * The Julia Language (see https://julialang.org/downloads/)
