@@ -186,7 +186,7 @@ module BeatSaber
 
   function mapsong(filename::String, songname::String)
     songname = replace(songname, "." => "") # Remove any periods because they screw up BMBF
-    folder = randstring(['a':'z'; '0':'9'], 40) * "_" * songname
+    folder =  songname  * "_" * randstring(['a':'z'; '0':'9'], 40)
     if !isdir(folder)
       mkdir(folder)
     end
